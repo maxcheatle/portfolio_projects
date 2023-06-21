@@ -177,3 +177,5 @@ Birdies per round reflect a player's ability to convert scoring opportunities. O
 While driving distance can provide an edge, accuracy and course management are equally important. Players who prioritize precision over power can excel by strategically positioning themselves off the tee and utilizing their strong short game skills.
 
 In summary, driving distance and birdies per round are vital metrics in golf. While longer hitters may have an advantage, accuracy and the ability to convert birdie opportunities are equally important. Finding the right balance between power, accuracy, and scoring ability is key to success on the golf course.
+
+![Relationship between birdies and driving distance](images/birdies_distance_plot.png)
