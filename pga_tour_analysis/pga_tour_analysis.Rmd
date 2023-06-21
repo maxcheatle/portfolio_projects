@@ -1,0 +1,88 @@
+---
+title: "pga_tour_analysis"
+author: "Max Cheatle"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+
+library(tidyverse)
+library(DBI)
+library(janitor)
+
+```
+
+## PGA Tour Stats Database
+
+Using data from the [**PGA Tour**](https://www.pgatour.com/stats) website, I have created a database of the 2022/23 season player statistics (update as of June 21st).
+
+### Database connection
+
+```{r database connections}
+
+pga_stats <- DBI::dbConnect(
+  drv = RSQLite::SQLite(),
+  dbname = here::here("data", "pga_stats.db")
+)
+
+DBI::dbListTables(pga_stats)
+```
+
+### Formatting & cleaning tables
+
+```{r database formatting}
+
+birdies <- data.frame(
+  dplyr::tbl(pga_stats, "birdies_per_round")
+  ) %>% 
+  janitor::clean_names()
+
+driving <- data.frame(
+  dplyr::tbl(pga_stats, "driving_distance")
+  ) %>% 
+  janitor::clean_names()
+
+gir <- data.frame(
+  dplyr::tbl(pga_stats, "gir_pct")
+  ) %>% 
+  janitor::clean_names()
+
+scoring <- data.frame(
+  dplyr::tbl(pga_stats, "scoring_avg")
+  ) %>% 
+  janitor::clean_names()
+
+scrambling <- data.frame(
+  dplyr::tbl(pga_stats, "scrambling_pct")
+  ) %>% 
+  janitor::clean_names()
+
+```
+
+```{r cleaning tables}
+
+birdies <- birdies %>% 
+  select(-movement) %>% 
+  rename(birdies_per_round = avg)
+
+driving <- driving %>% 
+  select(-movement) %>% 
+  rename(driving_avg = avg)
+
+gir <- gir %>% 
+  select(-movement) %>% 
+  rename(gir_pct = x)
+
+scoring <- scoring %>% 
+  select(-movement) %>% 
+  rename(scoring_avg = avg)
+
+scrambling <- scrambling %>% 
+  select(-movement) %>% 
+  rename(scrambling_pct = x)
+
+```
