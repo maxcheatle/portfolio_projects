@@ -20,6 +20,8 @@ library(janitor)
 
 Using data from the [**PGA Tour**](https://www.pgatour.com/stats) website, I have created a database of the 2022/23 season player statistics (update as of June 21st).
 
+[![PGA Tour Website](images/pga_tour_website.png)](https://www.pgatour.com/stats)
+
 ### Database connection
 
 ```{r database connections}
@@ -30,9 +32,12 @@ pga_stats <- DBI::dbConnect(
 )
 
 DBI::dbListTables(pga_stats)
+
 ```
 
 ### Formatting & cleaning tables
+
+Here, we create dataframes from the database connection, and use `janitor::clean_names()` to tidy the column names. Following, I've manually changed some of the column names - this will make it much clearer to readers later in my analysis.
 
 ```{r database formatting}
 
@@ -84,5 +89,13 @@ scoring <- scoring %>%
 scrambling <- scrambling %>% 
   select(-movement) %>% 
   rename(scrambling_pct = x)
+
+```
+
+## Exploratory Data Analysis
+
+```{r}
+
+
 
 ```
