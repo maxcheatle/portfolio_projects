@@ -2,10 +2,6 @@
 title: "pga_tour_analysis"
 author: "Max Cheatle"
 date: "`r Sys.Date()`"
-output:
-  html_document:
-    toc: true
-    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
