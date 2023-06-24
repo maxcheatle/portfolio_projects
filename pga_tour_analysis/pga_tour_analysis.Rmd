@@ -17,6 +17,10 @@ library(ggforce)
 library(grid)
 library(png)
 library(scales)
+library(GGally)
+library(ggfortify)
+library(margins)
+library(coefplot)
 
 ```
 
@@ -112,8 +116,6 @@ Before I commence with some exploratory data anaylsis, let's clearly define all 
 
 ### Heatmap of Player Performance Across all Metrics
 
-First, it'd be good to get an overall viewpoint of player performance across all of our chosen metrics. A good way to visualise this is in the form of a heatmap. You can see my code at the end
-
 ```{r heatmap}
 
 # Prepare data for the heatmap
@@ -128,7 +130,7 @@ heatmap_data <- birdies %>%
   
   # Changing percentage variables, which are currently characters, to numeric
   mutate(gir_pct = as.numeric(sub("%", "", gir_pct)),
-         scrambling_pct = as.numeric(sub("%", "", gir_pct))) %>% 
+         scrambling_pct = as.numeric(sub("%", "", scrambling_pct))) %>% 
   
   # Changing raw value to group rank
   mutate(birdies_per_round = rank(-birdies_per_round),
@@ -174,9 +176,6 @@ ggsave("images/heatmap.png", heatmap, width = 16, height = 8)
 Modern golf is epitomized by big hitters. But... do the big hitter's make birdies more frequently? Let's take a look...
 
 ```{r birdies_driving}
-
-# Some references
-source("pga_ggplot_theme.R")
 
 # Left join the birdies and driving datasets
 birdies_distance_plot <- birdies %>% 
@@ -229,3 +228,44 @@ ggsave("images/birdies_distance_plot.png", birdies_distance_plot, width = 16, he
 ![Relationship between birdies and driving distance](images/birdies_distance_plot.png)
 
 ## Regression Analysis
+
+```{r}
+
+regression_data <- birdies %>%
+  
+  # Joining respecive tables to complete dataset
+  left_join(driving, by = "player") %>%
+  left_join(gir, by = "player") %>%
+  left_join(scoring, by = "player") %>%
+  left_join(scrambling, by = "player") %>%
+  select(player, birdies_per_round, driving_avg, gir_pct, scoring_avg, scrambling_pct) %>% 
+  
+  # Changing percentage variables, which are currently characters, to numeric
+  mutate(gir_pct = as.numeric(sub("%", "", gir_pct)),
+         scrambling_pct = as.numeric(sub("%", "", scrambling_pct)))
+
+corr_pairs <- regression_data %>% 
+  select(-player) %>% 
+  ggpairs()
+  
+
+ggsave("images/corr_pairs.png", corr_pairs, width = 16, height = 8)
+
+
+model_1 <- lm(scoring_avg ~ driving_avg, data = regression_data)
+summary(model_1)
+autoplot(model_1, 1:3)
+
+model_2 <- lm(scoring_avg ~ driving_avg + birdies_per_round, data = regression_data)
+summary(model_2)
+autoplot(model_2, 1:3)
+
+model_3 <- lm(scoring_avg ~ driving_avg + birdies_per_round + gir_pct, data = regression_data)
+summary(model_3)
+autoplot(model_3, 1:3)
+
+model_4 <- lm(scoring_avg ~ driving_avg + birdies_per_round + gir_pct + scrambling_pct, data = regression_data)
+summary(model_4)
+autoplot(model_4, 1:3)
+
+```
