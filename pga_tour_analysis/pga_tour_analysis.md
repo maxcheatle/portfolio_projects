@@ -1,9 +1,3 @@
----
-title: "pga_tour_analysis"
-author: "Max Cheatle"
-date: "`r Sys.Date()`"
----
-
 ```{r setup, include=FALSE}
 
 library(tidyverse)

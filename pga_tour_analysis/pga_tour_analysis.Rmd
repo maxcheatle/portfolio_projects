@@ -16,6 +16,7 @@ library(janitor)
 library(ggforce)
 library(grid)
 library(png)
+library(scales)
 
 ```
 
@@ -100,7 +101,7 @@ scrambling <- scrambling %>%
 Before I commence with some exploratory data anaylsis, let's clearly define all of our variables of interest:
 
 | Variable          | Description                                                                                   |
-|----------------|--------------------------------------------------------|
+|-------------------|-----------------------------------------------------|
 | player            | Player's name                                                                                 |
 | rank              | Player's PGA Tour rank in the variable of interest                                            |
 | birdies_per_round | The average number of birdies a player makes in each PGA tour round (18 holes)                |
@@ -109,11 +110,70 @@ Before I commence with some exploratory data anaylsis, let's clearly define all 
 | scoring_avg       | Each player's average 18-hole score (strokes)                                                 |
 | scrambling_pct    | Percentage of holes that a player makes par-or-better, when failing to reach GIR (scrambling) |
 
+### Heatmap of Player Performance Across all Metrics
+
+First, it'd be good to get an overall viewpoint of player performance across all of our chosen metrics. A good way to visualise this is in the form of a heatmap. You can see my code at the end
+
+```{r heatmap}
+
+# Prepare data for the heatmap
+heatmap_data <- birdies %>%
+  
+  # Joining respecive tables to complete dataset
+  left_join(driving, by = "player") %>%
+  left_join(gir, by = "player") %>%
+  left_join(scoring, by = "player") %>%
+  left_join(scrambling, by = "player") %>%
+  select(player, birdies_per_round, driving_avg, gir_pct, scoring_avg, scrambling_pct) %>% 
+  
+  # Changing percentage variables, which are currently characters, to numeric
+  mutate(gir_pct = as.numeric(sub("%", "", gir_pct)),
+         scrambling_pct = as.numeric(sub("%", "", gir_pct))) %>% 
+  
+  # Changing raw value to group rank
+  mutate(birdies_per_round = rank(-birdies_per_round),
+         driving_avg = rank(-driving_avg),
+         gir_pct = rank(-gir_pct),
+         scoring_avg = rank(scoring_avg),
+         scrambling_pct = rank(-scrambling_pct)) %>% 
+  
+  # Creating an overall rank, by summing each player's rank in all metrics, then re-ranking
+  group_by(player) %>% 
+  mutate(overall = sum(birdies_per_round + driving_avg + gir_pct + scoring_avg + scrambling_pct)) %>% 
+  ungroup() %>% 
+  mutate(overall = rank(overall)) %>% 
+  filter(overall <= 30) %>% 
+  
+  # Longing the data for plotting
+  pivot_longer(cols = c(birdies_per_round, 
+                        driving_avg, gir_pct, 
+                        scoring_avg, 
+                        scrambling_pct), 
+               values_to = "rank", 
+               names_to = "metric")
+
+# Plot the heatmap
+heatmap <- ggplot(heatmap_data, aes(x = reorder(player, overall), y = metric, fill = rank)) +
+  geom_tile(color = "white") +
+  
+  # Using a white to red scale, inspired by PGA colours
+  scale_fill_gradient(low = "white", high = "#C71230") + 
+  
+  # Aesthetic additions
+  labs(x = NULL, y = NULL, title = "PGA Player Heatmap", subtitle = "For Top 30 players in 2022/23 PGA Tour tournaments", fill = "Tour Rank") +
+  pga_theme +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 12),
+        axis.text.y = element_text(size = 12))
+
+ggsave("images/heatmap.png", heatmap, width = 16, height = 8)
+
+```
+
 ### Driving Distance vs. Birdie Rate
 
 Modern golf is epitomized by big hitters. But... do the big hitter's make birdies more frequently? Let's take a look...
 
-```{r}
+```{r birdies_driving}
 
 # Some references
 source("pga_ggplot_theme.R")
@@ -164,18 +224,8 @@ birdies_distance_plot <- birdies %>%
 # Save the plot as a PNG image
 ggsave("images/birdies_distance_plot.png", birdies_distance_plot, width = 16, height = 8)
 
-
-view(birdies %>% 
-  left_join(driving, by = "player") %>% 
-  select(player, driving_avg, birdies_per_round))
 ```
 
-Driving distance is a significant factor in golf, with longer hitters often having an advantage. On average, professional golfers drive the ball around 290-310 yards off the tee. However, it's important to note that accuracy and other aspects of the game also play a crucial role.
-
-Birdies per round reflect a player's ability to convert scoring opportunities. On average, professional golfers make around 3-4 birdies per round. This statistic showcases their proficiency in capitalizing on favorable situations through accurate iron play and strong putting.
-
-While driving distance can provide an edge, accuracy and course management are equally important. Players who prioritize precision over power can excel by strategically positioning themselves off the tee and utilizing their strong short game skills.
-
-In summary, driving distance and birdies per round are vital metrics in golf. While longer hitters may have an advantage, accuracy and the ability to convert birdie opportunities are equally important. Finding the right balance between power, accuracy, and scoring ability is key to success on the golf course.
-
 ![Relationship between birdies and driving distance](images/birdies_distance_plot.png)
+
+## Regression Analysis
