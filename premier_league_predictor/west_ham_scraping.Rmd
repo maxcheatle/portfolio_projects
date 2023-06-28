@@ -1,0 +1,262 @@
+---
+title: "west_ham_scraping"
+author: "Max Cheatle"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup}
+
+library(tidyverse)
+library(rvest)
+library(janitor)
+
+```
+
+```{r fixtures}
+
+scrape_fixtures <- function(url) {
+  fixture_list <- url %>%
+    read_html()
+  
+  fixtures <- data.frame(
+    fixture_list %>%
+      html_elements("#matchlogs_for") %>%
+      html_table()
+  ) %>% 
+    janitor::clean_names() %>% 
+    filter(comp == "Premier League") %>% 
+    mutate(gf = as.character(gf),
+           ga = as.character(ga))
+  
+  return(fixtures)
+}
+
+fixture_urls <- c(
+  "https://fbref.com/en/squads/7c21e445/2017-2018/West-Ham-United-Stats#all_matchlogs",
+  "https://fbref.com/en/squads/7c21e445/2018-2019/West-Ham-United-Stats#all_matchlogs",
+  "https://fbref.com/en/squads/7c21e445/2019-2020/West-Ham-United-Stats#all_matchlogs",
+  "https://fbref.com/en/squads/7c21e445/2020-2021/West-Ham-United-Stats#all_matchlogs",
+  "https://fbref.com/en/squads/7c21e445/2021-2022/West-Ham-United-Stats#all_matchlogs",
+  "https://fbref.com/en/squads/7c21e445/2022-2023/West-Ham-United-Stats#all_matchlogs"
+)
+
+all_fixtures <- list()
+
+for (url in fixture_urls) {
+  fixtures <- scrape_fixtures(url)
+  all_fixtures[[url]] <- fixtures
+}
+
+combined_fixtures <- bind_rows(all_fixtures)
+
+view(combined_fixtures)
+
+```
+
+```{r shooting}
+
+scrape_shooting <- function(url) {
+  shooting_list <- url %>%
+    read_html()
+  
+  shooting <- data.frame(
+    shooting_list %>%
+      html_elements("#matchlogs_for") %>%
+      html_table()
+  ) %>% 
+    janitor::clean_names()
+  
+  return(shooting)
+}
+
+shooting_urls <- c(
+  "https://fbref.com/en/squads/7c21e445/2017-2018/matchlogs/all_comps/shooting/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2018-2019/matchlogs/all_comps/shooting/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2019-2020/matchlogs/all_comps/shooting/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2020-2021/matchlogs/all_comps/shooting/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2021-2022/matchlogs/all_comps/shooting/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2022-2023/matchlogs/all_comps/shooting/West-Ham-United-Match-Logs-All-Competitions"
+)
+
+all_shooting <- list()
+
+for (url in shooting_urls) {
+  shooting <- scrape_shooting(url)
+  all_shooting[[url]] <- shooting
+}
+
+combined_shooting <- bind_rows(all_shooting)
+
+view(combined_shooting)
+
+# Get the first row of the combined_shooting data frame
+new_column_names <- as.character(combined_shooting[1, ])
+
+# Set the new column names
+colnames(combined_shooting) <- new_column_names
+
+# Remove the first row from the combined_shooting data frame
+combined_shooting <- combined_shooting[-1, ] %>% 
+  janitor::clean_names() %>% 
+  filter(comp == "Premier League") %>% 
+  select(date:match_report)
+
+view(combined_shooting)
+
+```
+
+```{r passing}
+
+scrape_passing <- function(url) {
+  passing_list <- url %>%
+    read_html()
+  
+  passing <- data.frame(
+    passing_list %>%
+      html_elements("#matchlogs_for") %>%
+      html_table()
+  ) %>% 
+    janitor::clean_names()
+  
+  return(passing)
+}
+
+passing_urls <- c(
+  "https://fbref.com/en/squads/7c21e445/2017-2018/matchlogs/all_comps/passing/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2018-2019/matchlogs/all_comps/passing/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2019-2020/matchlogs/all_comps/passing/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2020-2021/matchlogs/all_comps/passing/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2021-2022/matchlogs/all_comps/passing/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2022-2023/matchlogs/all_comps/passing/West-Ham-United-Match-Logs-All-Competitions"
+)
+
+all_passing <- list()
+
+for (url in passing_urls) {
+  passing <- scrape_passing(url)
+  all_passing[[url]] <- passing
+}
+
+combined_passing <- bind_rows(all_passing)
+
+view(combined_passing)
+
+# Get the first row of the combined_shooting data frame
+new_column_names <- as.character(combined_passing[1, ])
+
+# Set the new column names
+colnames(combined_passing) <- new_column_names
+
+# Remove the first row from the combined_shooting data frame
+combined_passing <- combined_passing[-1, ] %>% 
+  janitor::clean_names() %>% 
+  filter(comp == "Premier League") %>% 
+  select(date:match_report)
+
+view(combined_passing)
+
+```
+
+```{r possession}
+
+scrape_poss <- function(url) {
+  poss_list <- url %>%
+    read_html()
+  
+  poss <- data.frame(
+    poss_list %>%
+      html_elements("#matchlogs_for") %>%
+      html_table()
+  ) %>% 
+    janitor::clean_names()
+  
+  return(poss)
+}
+
+poss_urls <- c(
+  "https://fbref.com/en/squads/7c21e445/2017-2018/matchlogs/all_comps/possession/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2018-2019/matchlogs/all_comps/possession/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2019-2020/matchlogs/all_comps/possession/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2020-2021/matchlogs/all_comps/possession/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2021-2022/matchlogs/all_comps/possession/West-Ham-United-Match-Logs-All-Competitions",
+  "https://fbref.com/en/squads/7c21e445/2022-2023/matchlogs/all_comps/possession/West-Ham-United-Match-Logs-All-Competitions"
+)
+
+all_poss <- list()
+
+for (url in poss_urls) {
+  poss <- scrape_poss(url)
+  all_poss[[url]] <- poss
+}
+
+combined_poss <- bind_rows(all_poss)
+
+view(combined_poss)
+
+# Get the first row of the combined_shooting data frame
+new_column_names <- as.character(combined_poss[1, ])
+
+# Set the new column names
+colnames(combined_poss) <- new_column_names
+
+# Remove the first row from the combined_shooting data frame
+combined_poss <- combined_poss[-1, ] %>% 
+  janitor::clean_names() %>% 
+  filter(comp == "Premier League") %>% 
+  select(date:match_report)
+
+view(combined_poss)
+
+```
+
+```{r data_clean}
+
+# Creating a primary key to link the tables
+
+combined_fixtures <- combined_fixtures %>% 
+  mutate(year = substr(date, 1,4),
+         matchweek = substr(round, 11, 13),
+         game_id = paste(year, matchweek, sep = "_"))
+
+combined_shooting <- combined_shooting %>% 
+  mutate(year = substr(date, 1,4),
+         matchweek = substr(round, 11, 13),
+         game_id = paste(year, matchweek, sep = "_"))
+
+combined_passing <- combined_passing %>% 
+  mutate(year = substr(date, 1,4),
+         matchweek = substr(round, 11, 13),
+         game_id = paste(year, matchweek, sep = "_"))
+
+combined_poss <- combined_poss %>% 
+  mutate(year = substr(date, 1,4),
+         matchweek = substr(round, 11, 13),
+         game_id = paste(year, matchweek, sep = "_"))
+
+# Creating a central "base" table
+
+match_results <- combined_fixtures %>% 
+  select(game_id, date, time, venue, result, gf, ga, opponent, referee)
+
+view(match_results)
+
+# Now let's clean up our existing tables so we only keep essential data
+
+combined_fixtures <- combined_fixtures %>% 
+  select(game_id, date:opponent, poss, formation)
+
+view(combined_fixtures)
+
+combined
+
+
+
+```
+
+
+
+
+
+
+
