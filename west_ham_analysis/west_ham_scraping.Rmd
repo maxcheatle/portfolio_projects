@@ -237,23 +237,94 @@ combined_poss <- combined_poss %>%
 # Creating a central "base" table
 
 match_results <- combined_fixtures %>% 
-  select(game_id, date, time, venue, result, gf, ga, opponent, referee)
+  select(game_id, date, time, venue, result, gf, ga, opponent, referee) %>% 
+  mutate(gf = as.integer(gf),
+         ga = as.integer(ga))
 
-view(match_results)
+glimpse(match_results)
 
 # Now let's clean up our existing tables so we only keep essential data
 
 combined_fixtures <- combined_fixtures %>% 
-  select(game_id, date:opponent, poss, formation)
+  select(game_id, date:opponent, poss, formation) %>% 
+  mutate(gf = as.integer(gf),
+         ga = as.integer(ga),
+         poss = as.double(poss)/100)
 
-view(combined_fixtures)
+glimpse(combined_fixtures)
 
-combined
+combined_passing <- combined_passing %>% 
+  select(game_id, cmp, att, tot_dist, prg_dist, kp, ppa, crs_pa) %>% 
+  rename(pass_cmp = cmp, pass_att = att, cmp_pass_dist = tot_dist, prg_pass_dist = prg_dist, key_passes = kp, pass_pa = ppa, cross_pa = crs_pa) %>% 
+  mutate(pass_cmp = as.integer(pass_cmp),
+         pass_att = as.integer(pass_att),
+         pass_cmp_rate = pass_cmp/pass_att,
+         cmp_pass_dist = as.integer(cmp_pass_dist),
+         prg_pass_dist = as.integer(prg_pass_dist),
+         key_passes = as.integer(key_passes),
+         pass_pa = as.integer(pass_pa),
+         cross_pa = as.integer(cross_pa))
+
+glimpse(combined_passing)
+
+combined_shooting <- combined_shooting %>% 
+  select(game_id, sh, so_t, dist) %>% 
+  rename(shots = sh, shots_ot = so_t, avg_shot_dist = dist) %>% 
+  mutate(shots = as.integer(shots),
+         shots_ot = as.integer(shots_ot),
+         shots_ot_rate = round(shots_ot/shots, 2),
+         avg_shot_dist = as.integer(avg_shot_dist))
+
+glimpse(combined_shooting)
+
+combined_poss <- combined_poss %>% 
+  select(game_id, touches, def_3rd, mid_3rd, att_3rd, att, succ, tot_dist, prg_dist) %>%
+  rename(att_carries = att, succ_carries = succ, carry_dist = tot_dist, progressive_carry_dist = prg_dist) %>% 
+  mutate(touches = as.integer(touches),
+         def_3rd = as.integer(def_3rd),
+         mid_3rd = as.integer(mid_3rd),
+         att_3rd = as.integer(att_3rd),
+         att_carries = as.integer(att_carries),
+         succ_carries = as.integer(succ_carries),
+         succ_carry_rate = round(succ_carries/att_carries, 2),
+         carry_dist = as.integer(carry_dist),
+         progressive_carry_dist = as.integer(progressive_carry_dist))
+
+glimpse(combined_poss)
+
+```
+
+```{r eda}
+
+# Total goals for and against in the period
+
+match_results %>% 
+  summarise(total_gf = sum(gf), total_ga = sum(ga))
+
+# Results in the period
+
+source("west_ham_theme.R")
+
+# Calculate the percentage of total games
+match_results_summary <- match_results %>%
+  group_by(result) %>%
+  summarise(number = n()) %>%
+  mutate(percentage = number / sum(number) * 100)
+
+# Plot the bar chart with text labels
+ggplot(match_results_summary, aes(x = factor(result, levels = c("W", "D", "L")), y = number)) +
+  geom_bar(stat = "identity", fill = west_ham_sky_blue) +
+  geom_text(aes(label = paste0(round(percentage), "%")), vjust = 2, color = west_ham_dark_blue, size = 4) +
+  west_ham_theme +
+  labs(title = "Match Results in the Period",
+       x = "Result",
+       y = "Number of Matches",
+       fill = "Result")
+
 
 
 
 ```
-
 
 
 
