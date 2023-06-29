@@ -20,6 +20,8 @@ combined_poss <- read.csv("data/combined_poss.csv")
 
 ```
 
+# Don't include scraping code, and explain why. Explain why /data/ is not included also.
+
 ```{r fixtures}
 
 library(httr)
@@ -254,7 +256,7 @@ combined_poss <- combined_poss %>%
 # Creating a central "base" table
 
 match_results <- combined_fixtures %>% 
-  select(game_id, date, time, venue, result, gf, ga, opponent, referee) %>% 
+  select(game_id, date, time, venue, result, gf, ga, opponent, referee, poss) %>% 
   mutate(gf = as.integer(gf),
          ga = as.integer(ga))
 
@@ -333,12 +335,12 @@ match_results_summary <- match_results %>%
   mutate(percentage = number / sum(number) * 100)
 
 # Plot the bar chart with text labels
-match_results_plot <- ggplot(match_results_summary, aes(x = factor(result, levels = c("W", "D", "L")), y = number)) +
-  geom_bar(stat = "identity", fill = blue_shades) +
+match_results_plot <-  ggplot(match_results_summary, aes(x = factor(result, levels = c("W", "D", "L")), y = number)) +
+  geom_bar(stat = "identity", fill = alpha(blue_shades, 0.7), position = position_dodge(width = 0.5)) +
   geom_text(aes(label = paste0(round(percentage), "%")), vjust = 2, color = west_ham_dark_blue, size = 4) +
   west_ham_theme +
   labs(title = "West Ham results since 2017/18 season",
-       subtitle = "Premier League games only", 
+       subtitle = "Premier League games only",
        x = "Result",
        y = "Number of Matches",
        fill = "Result")
@@ -347,12 +349,12 @@ ggsave("images/match_results.png", match_results_plot, width = 16, height = 8)
 
 # Update the fill colors in the plot
 result_performances_plot <- match_results %>%
-  select(game_id, result) %>%
+  select(game_id, result, poss) %>%
   left_join(combined_shooting, "game_id") %>%
   left_join(combined_passing, "game_id") %>%
   left_join(combined_poss, "game_id") %>%
-  select(game_id, result, shots, shots_ot_rate, pass_cmp, pass_cmp_rate, att_carries, succ_carry_rate) %>%
-  pivot_longer(shots:succ_carry_rate, names_to = "metric", values_to = "value") %>%
+  select(game_id, result, poss, shots, shots_ot_rate, avg_shot_dist, pass_cmp, pass_cmp_rate, touches, att_carries, succ_carry_rate, def_3rd, mid_3rd, att_3rd) %>%
+  pivot_longer(poss:att_3rd, names_to = "metric", values_to = "value") %>%
   ggplot(aes(x = value, fill = result)) +
   geom_density(alpha = 0.5) +
   facet_wrap(~ metric, scales = "free") +
@@ -368,9 +370,5 @@ ggsave("images/result_performances.png", result_performances_plot, width = 16, h
 ggsave("images/cover.png", result_performances_plot, width = 16, height = 5)
 
 ```
-
-
-
-
 
 
