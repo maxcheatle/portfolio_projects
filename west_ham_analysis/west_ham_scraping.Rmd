@@ -10,10 +10,20 @@ output: html_document
 library(tidyverse)
 library(rvest)
 library(janitor)
+library(RColorBrewer)
+library(robotstxt)
+
+combined_fixtures <- read.csv("data/combined_fixtures.csv")
+combined_shooting <- read.csv("data/combined_shooting.csv")
+combined_passing <- read.csv("data/combined_passing.csv")
+combined_poss <- read.csv("data/combined_poss.csv")
 
 ```
 
 ```{r fixtures}
+
+library(httr)
+paths_allowed("https://fbref.com")
 
 scrape_fixtures <- function(url) {
   fixture_list <- url %>%
@@ -44,8 +54,9 @@ fixture_urls <- c(
 all_fixtures <- list()
 
 for (url in fixture_urls) {
-  fixtures <- scrape_fixtures(url)
-  all_fixtures[[url]] <- fixtures
+  poss <- scrape_fixtures(url)
+  all_fixtures[[url]] <- poss
+  Sys.sleep(5)
 }
 
 combined_fixtures <- bind_rows(all_fixtures)
@@ -84,6 +95,7 @@ all_shooting <- list()
 for (url in shooting_urls) {
   shooting <- scrape_shooting(url)
   all_shooting[[url]] <- shooting
+  Sys.sleep(5)
 }
 
 combined_shooting <- bind_rows(all_shooting)
@@ -136,6 +148,7 @@ all_passing <- list()
 for (url in passing_urls) {
   passing <- scrape_passing(url)
   all_passing[[url]] <- passing
+  Sys.sleep(5)
 }
 
 combined_passing <- bind_rows(all_passing)
@@ -185,9 +198,13 @@ poss_urls <- c(
 
 all_poss <- list()
 
+library(httr)
+
 for (url in poss_urls) {
+  response <- GET(url, add_headers(headers))
   poss <- scrape_poss(url)
   all_poss[[url]] <- poss
+  Sys.sleep(5)
 }
 
 combined_poss <- bind_rows(all_poss)
@@ -301,9 +318,13 @@ glimpse(combined_poss)
 match_results %>% 
   summarise(total_gf = sum(gf), total_ga = sum(ga))
 
-# Results in the period
-
+# Some References
 source("west_ham_theme.R")
+num_shades <- 3
+blue_shades <- brewer.pal(num_shades, "Blues")
+contrast_colors <- c("#0B4D92", "#82C0E5", "#FF5050")
+
+# Results in the period
 
 # Calculate the percentage of total games
 match_results_summary <- match_results %>%
@@ -312,17 +333,39 @@ match_results_summary <- match_results %>%
   mutate(percentage = number / sum(number) * 100)
 
 # Plot the bar chart with text labels
-ggplot(match_results_summary, aes(x = factor(result, levels = c("W", "D", "L")), y = number)) +
-  geom_bar(stat = "identity", fill = west_ham_sky_blue) +
+match_results_plot <- ggplot(match_results_summary, aes(x = factor(result, levels = c("W", "D", "L")), y = number)) +
+  geom_bar(stat = "identity", fill = blue_shades) +
   geom_text(aes(label = paste0(round(percentage), "%")), vjust = 2, color = west_ham_dark_blue, size = 4) +
   west_ham_theme +
-  labs(title = "Match Results in the Period",
+  labs(title = "West Ham results since 2017/18 season",
+       subtitle = "Premier League games only", 
        x = "Result",
        y = "Number of Matches",
        fill = "Result")
 
+ggsave("images/match_results.png", match_results_plot, width = 16, height = 8)
 
+# Update the fill colors in the plot
+result_performances_plot <- match_results %>%
+  select(game_id, result) %>%
+  left_join(combined_shooting, "game_id") %>%
+  left_join(combined_passing, "game_id") %>%
+  left_join(combined_poss, "game_id") %>%
+  select(game_id, result, shots, shots_ot_rate, pass_cmp, pass_cmp_rate, att_carries, succ_carry_rate) %>%
+  pivot_longer(shots:succ_carry_rate, names_to = "metric", values_to = "value") %>%
+  ggplot(aes(x = value, fill = result)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ metric, scales = "free") +
+  scale_fill_manual(values = contrast_colors, labels = c("W" = "Win", "D" = "Draw", "L" = "Loss")) +
+  west_ham_theme +
+  labs(title = "Statistical Performance by Match Result",
+       subtitle = "All West Ham Premier League games since 2017/18 season",
+       x = "Value",
+       y = "Density",
+       fill = "Result")
 
+ggsave("images/result_performances.png", result_performances_plot, width = 16, height = 8)
+ggsave("images/cover.png", result_performances_plot, width = 16, height = 5)
 
 ```
 

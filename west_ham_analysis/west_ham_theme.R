@@ -24,5 +24,3 @@ west_ham_theme <- theme(
   plot.background = element_rect(fill = west_ham_claret),
   plot.margin = unit(c(1, 1, 1, 1), "cm")
 )
-
-)
