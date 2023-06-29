@@ -234,22 +234,22 @@ view(combined_poss)
 # Creating a primary key to link the tables
 
 combined_fixtures <- combined_fixtures %>% 
-  mutate(year = substr(date, 1,4),
+  mutate(year = substr(date, 9, 10),
          matchweek = substr(round, 11, 13),
          game_id = paste(year, matchweek, sep = "_"))
 
 combined_shooting <- combined_shooting %>% 
-  mutate(year = substr(date, 1,4),
+  mutate(year = substr(date, 9, 10),
          matchweek = substr(round, 11, 13),
          game_id = paste(year, matchweek, sep = "_"))
 
 combined_passing <- combined_passing %>% 
-  mutate(year = substr(date, 1,4),
+  mutate(year = substr(date, 9, 10),
          matchweek = substr(round, 11, 13),
          game_id = paste(year, matchweek, sep = "_"))
 
 combined_poss <- combined_poss %>% 
-  mutate(year = substr(date, 1,4),
+  mutate(year = substr(date, 9, 10),
          matchweek = substr(round, 11, 13),
          game_id = paste(year, matchweek, sep = "_"))
 
@@ -347,7 +347,8 @@ match_results_plot <-  ggplot(match_results_summary, aes(x = factor(result, leve
 
 ggsave("images/match_results.png", match_results_plot, width = 16, height = 8)
 
-# Update the fill colors in the plot
+# Performances by result
+
 result_performances_plot <- match_results %>%
   select(game_id, result, poss) %>%
   left_join(combined_shooting, "game_id") %>%
@@ -368,6 +369,16 @@ result_performances_plot <- match_results %>%
 
 ggsave("images/result_performances.png", result_performances_plot, width = 16, height = 8)
 ggsave("images/cover.png", result_performances_plot, width = 16, height = 5)
+
+
+# Results by referee
+
+view(match_results)
+view(combined_fixtures)
+view(combined_shooting)
+view(combined_passing)
+view(combined_poss)
+
 
 ```
 
