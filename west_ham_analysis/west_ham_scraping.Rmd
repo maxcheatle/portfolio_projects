@@ -12,6 +12,11 @@ library(rvest)
 library(janitor)
 library(RColorBrewer)
 library(robotstxt)
+library(dplyr)
+library(scales)
+library(lubridate)
+library(caTools)
+library(caret)
 
 combined_fixtures <- read.csv("data/combined_fixtures.csv")
 combined_shooting <- read.csv("data/combined_shooting.csv")
@@ -20,7 +25,6 @@ combined_poss <- read.csv("data/combined_poss.csv")
 
 ```
 
-# Don't include scraping code, and explain why. Explain why /data/ is not included also.
 
 ```{r fixtures}
 
@@ -256,7 +260,7 @@ combined_poss <- combined_poss %>%
 # Creating a central "base" table
 
 match_results <- combined_fixtures %>% 
-  select(game_id, date, time, venue, result, gf, ga, opponent, referee, poss) %>% 
+  select(game_id, date, time, round, venue, result, gf, ga, opponent, referee, poss) %>% 
   mutate(gf = as.integer(gf),
          ga = as.integer(ga))
 
@@ -323,7 +327,10 @@ match_results %>%
 # Some References
 source("west_ham_theme.R")
 num_shades <- 3
-blue_shades <- brewer.pal(num_shades, "Blues")
+blues <- brewer.pal(num_shades, "Blues")
+blue_shades <- colorRampPalette(c("#FFFFFF", "#82C0E5"))(9)
+blue_shades <- colorRampPalette(c("#FFFFFF", "#82C0E5"))(9)
+red_shades <- colorRampPalette(c("#FF5050", "#FFFFFF"))(9)
 contrast_colors <- c("#0B4D92", "#82C0E5", "#FF5050")
 
 # Results in the period
@@ -336,7 +343,7 @@ match_results_summary <- match_results %>%
 
 # Plot the bar chart with text labels
 match_results_plot <-  ggplot(match_results_summary, aes(x = factor(result, levels = c("W", "D", "L")), y = number)) +
-  geom_bar(stat = "identity", fill = alpha(blue_shades, 0.7), position = position_dodge(width = 0.5)) +
+  geom_bar(stat = "identity", fill = blues, position = position_dodge(width = 0.5)) +
   geom_text(aes(label = paste0(round(percentage), "%")), vjust = 2, color = west_ham_dark_blue, size = 4) +
   west_ham_theme +
   labs(title = "West Ham results since 2017/18 season",
@@ -371,15 +378,108 @@ ggsave("images/result_performances.png", result_performances_plot, width = 16, h
 ggsave("images/cover.png", result_performances_plot, width = 16, height = 5)
 
 
+
 # Results by referee
 
-view(match_results)
-view(combined_fixtures)
-view(combined_shooting)
-view(combined_passing)
-view(combined_poss)
+ref_results <- match_results %>% 
+  select(result, referee) %>% 
+  group_by(referee, result) %>% 
+  summarise(count = n()) %>% 
+  mutate(total_games = sum(count),
+         rate = round(count/total_games*100,2)) %>% 
+  filter(rate != 100) %>% 
+  ggplot(aes(x = reorder(referee, -total_games), y = rate, fill = result)) +
+  scale_fill_manual(values = alpha(contrast_colors, 0.9), labels = c("W" = "Win", "D" = "Draw", "L" = "Loss")) +
+  geom_bar(stat = "identity") +
+  west_ham_theme +
+  labs(title = "Rate of Results for Each Referee",
+       subtitle = "West Ham Premier League games since 2017/18",
+       x = NULL,
+       y = "Rate (%)",
+       fill = "Result") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        panel.grid.major = element_blank(),  # Remove major grid lines
+        panel.grid.minor = element_blank())  # Remove minor grid lines
 
+ggsave("images/ref_results.png", ref_results, width = 16, height = 8)
+
+# Results by opponent (Wins)
+
+t9_opponents <- match_results %>% 
+  select(result, opponent) %>% 
+  group_by(opponent, result) %>% 
+  summarise(count = n()) %>% 
+  mutate(total_games = sum(count),
+         rate = round(count/total_games*100, 2)) %>% 
+  filter(result == "W") %>%
+  arrange(desc(rate)) %>%
+  head(9)
+
+t9_opponents_plot <- t9_opponents %>%
+  ggplot(aes(x = reorder(opponent, -rate), y = rate, fill = reorder(opponent, rate))) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = blue_shades) +
+  west_ham_theme +
+  labs(
+    title = "Rate of Results for Each Opponent",
+    subtitle = "West Ham Premier League games since 2017/18",
+    x = NULL,
+    y = "Rate (%)",
+    fill = "Result",
+    color = "Opponent"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("images/wins.png", t9_opponents_plot, width = 16, height = 8)
+
+# Results by opponent (Losses)
+
+b9_opponents <- match_results %>% 
+  select(result, opponent) %>% 
+  group_by(opponent, result) %>% 
+  summarise(count = n()) %>% 
+  mutate(total_games = sum(count),
+         rate = round(count/total_games*100, 2)) %>% 
+  filter(result == "L") %>%
+  arrange(desc(rate)) %>%
+  head(9)
+
+b9_opponents_plot <- b9_opponents %>%
+  ggplot(aes(x = reorder(opponent, -rate), y = rate, fill = reorder(opponent, -rate))) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = red_shades) +
+  west_ham_theme +
+  labs(
+    title = "Rate of Results for Each Opponent",
+    subtitle = "West Ham Premier League games since 2017/18",
+    x = NULL,
+    y = "Rate (%)",
+    fill = "Result",
+    color = "Opponent"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("images/losses.png", b9_opponents_plot, width = 16, height = 8)
 
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
